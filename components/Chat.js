@@ -1,10 +1,10 @@
 //import gifted chat library
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
-import { collection, getDocs, addDoc, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
 import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, } from 'react-native';
 
-const Chat = ({ route, navigation }) => {
+const Chat = ({ route, navigation, db, storage }) => {
     const { name, color, } = route.params;
     const [messages, setMessages] = useState([]);
 
@@ -12,7 +12,9 @@ const Chat = ({ route, navigation }) => {
         const messagesDocuments = await getDocs(collection(db, "messages"));
         let newMessages = [];
         messagesDocuments.forEach(docObject => {
-            newMessages.push({ id: docObject.id, ...docObject.data() })
+            const doc = docObject.data();
+            doc.createdAt = new Date(docObject.data().createdAt.toMillis())
+            newMessages.push({ id: doc.id, ...doc })
         });
         setMessages(newMessages)
     }
@@ -62,6 +64,7 @@ const Chat = ({ route, navigation }) => {
         const unsubMessages = onSnapshot(q, (docs) => {
             let newMessages = [];
             docs.forEach(doc => {
+                console.log(doc.data().createdAt,  new Date(doc.data().createdAt.toMillis()));
                 newMessages.push({
                     id: doc.id,
                     ...doc.data(),
@@ -100,7 +103,7 @@ const Chat = ({ route, navigation }) => {
 
     return (
         <View style={[styles.container, { backgroundColor: color }]}>
-            <Text>Welcome in the Chat</Text>
+            <Text>Welcome to the Chat</Text>
             <GiftedChat
                 messages={messages}
                 renderBubble={renderBubble}

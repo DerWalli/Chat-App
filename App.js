@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 // importfirestore from the package
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // import the screens we want to navigate
 import Chat from './components/Chat';
 import Start from './components/Start';
@@ -27,6 +28,7 @@ const App = () => {
   const app = initializeApp(firebaseConfig);
   // Initialize Cloud Firestore and get a reference to the service
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   return (
     <NavigationContainer>
@@ -37,10 +39,9 @@ const App = () => {
           component={Start}
         ></Stack.Screen>
         <Stack.Screen
-          name="Chat"
-          component={Chat}>
-            
-         
+            name="Chat"
+            >
+          {(props) => <Chat db={db} storage={storage} {...props}/>} 
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
