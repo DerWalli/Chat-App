@@ -20,7 +20,8 @@ const Start = ({ navigation }) => {
             .then(userCred => {
                 // navigation.navigate("Messages", { userID: result.user.uid });
                 const user = userCred.user;
-                navigation.navigate('Chat', { name: name , color: color, userID: user.id })
+                console.log(user)
+                navigation.navigate('Chat', { name: name , color: color, userID: user.uid })
                 Alert.alert("Signed in Successfully!");
             })
             .catch((error) => {

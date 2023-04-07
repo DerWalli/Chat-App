@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 // importfirestore from the package
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 // import the screens we want to navigate
 import Chat from './components/Chat';
@@ -9,12 +9,16 @@ import Start from './components/Start';
 // import react navigation
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNetInfo } from "@react-native-community/netinfo";
+import { useEffect, useState } from "react";
+import { LogBox, Alert } from "react-native";
 
 
 // Create the navigator
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  const connectionStatus = useNetInfo();
   const firebaseConfig = {
     apiKey: "AIzaSyAkFyI4fxRavv4ElEqLRJBLoDiSXx8OjH0",
     authDomain: "chat-a04a1.firebaseapp.com",
@@ -30,6 +34,15 @@ const App = () => {
   const db = getFirestore(app);
   const storage = getStorage(app);
 
+  useEffect(() => {
+    if (connectionStatus.isConnected === false) {
+      Alert.alert("Connection Lost!");
+      disableNetwork(db);
+    } else if (connectionStatus.isConnected === true) {
+      enableNetwork(db);
+    }
+  }, [connectionStatus.isConnected]);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -41,7 +54,7 @@ const App = () => {
         <Stack.Screen
             name="Chat"
             >
-          {(props) => <Chat db={db} storage={storage} {...props}/>} 
+          {(props) => <Chat isConnected={connectionStatus.isConnected} db={db} storage={storage} {...props}/>} 
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>

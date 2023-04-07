@@ -1,47 +1,26 @@
 //import gifted chat library
-import { GiftedChat, Bubble } from "react-native-gifted-chat";
-import { collection, getDocs, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
+import { collection, getDocs, addDoc, onSnapshot, query, orderBy, where, doc } from "firebase/firestore";
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, } from 'react-native';
+import { StyleSheet, View, Text, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, FlatList, Alert, LogBox} from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const Chat = ({ route, navigation, db, storage }) => {
-    const { name, color, } = route.params;
+const Chat = ({ route, navigation, db, isConnected }) => {
+    const { name, color, userID } = route.params;
     const [messages, setMessages] = useState([]);
-
-    const fetchMessages = async () => {
-        const messagesDocuments = await getDocs(collection(db, "messages"));
-        let newMessages = [];
-        messagesDocuments.forEach(docObject => {
-            const doc = docObject.data();
-            doc.createdAt = new Date(docObject.data().createdAt.toMillis())
-            newMessages.push({ id: doc.id, ...doc })
-        });
-        setMessages(newMessages)
-    }
-
-    useEffect(() => {
-        fetchMessages();
-    }, [`${messages}`]);
+    const [messageName, setMessageName] = useState('');
+    let unsubMessages;
 
     /**
      * 
      * @param {previousMessage} newMessages 
      */
-    /*const onSend = (newMessages) => {
-        setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages))
-   } \*/
+
     const onSend = (newMessages) => {
-        addDoc(collection(db, "messages"), newMessages[0])
+        addDoc(collection(db, 'messages'), newMessages[0])
     }
 
-    const addMessages = async (newMesages) => {
-        const newMessagesRef = await addDoc(collection(db, "messages"), newMessages);
-        if (newMessagesRef.id) {
-            Alert.alert(`The list "${messagesName}" has been added.`);
-        } else {
-            Alert.alert("Unable to add. Please try later");
-        }
-    }
+    
     const renderBubble = (props) => {
         return <Bubble
             {...props}
@@ -56,71 +35,126 @@ const Chat = ({ route, navigation, db, storage }) => {
         />
     }
 
-
-    // called only once, passing an empty array 
+   
     useEffect(() => {
-        navigation.setOptions({ title: name });
-        const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-        const unsubMessages = onSnapshot(q, (docs) => {
-            let newMessages = [];
-            docs.forEach(doc => {
-                console.log(doc.data().createdAt,  new Date(doc.data().createdAt.toMillis()));
-                newMessages.push({
-                    id: doc.id,
-                    ...doc.data(),
-                    createdAt: new Date(doc.data().createdAt.toMillis())
+        if(isConnected) {
+            navigation.setOptions({ title: name });
+            const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+            unsubMessages = onSnapshot(q, (docs) => {
+                let newMessages = [];
+                docs.forEach(doc => {
+                    newMessages.push({
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: new Date(doc.data().createdAt.toMillis())
+                    })
                 })
+                cacheMessages(newMessages);
+                setMessages(newMessages);
             })
-            setMessages(newMessages);
-        })
+        } else {
+            loadCachedMessages();
+        }
         return () => {
             if (unsubMessages) unsubMessages();
         }
-    }, []);
+    }, [isConnected]);
 
-    // set the state with a static message
-    // able to see each element of the UI displayed on screen right away
-    useEffect(() => {
-        setMessages([
-            {
-                _id: 1,
-                text: "Hello Andrea, have a great day! <3",
-                createdAt: new Date(),
-                user: {
-                    _id: 2,
-                    name: "React Native",
-                    avatar: "https://placeimg.com/140/140/any",
-                },
-            },
-            {
-                _id: 2,
-                text: 'This is a system message',
-                createdAt: new Date(),
-                system: true,
-            },
-        ]);
-    }, []);
+    const cacheMessages = async (messagesToCache) => {
+        try {
+            await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
+        } catch (error) {
+            console.log(error.message);
+        };
+    }
+    const loadCachedMessages = async () => {
+        const cachedMessages = await AsyncStorage.getItem('messages') || [];
+        setMessages(JSON.parse(cachedMessages));
+    }
+
+    const addMessage = async (newMessage) => {
+        const newMessageRef = await addDoc(collection(db, 'messages'), newMessage);
+        if (newMessageRef.id) {
+            setMessages([newMessage, ...messages]);
+            Alert.alert(`The message "${messageName}" has been added.`);
+        } else {
+            Alert.alert("Unable to add. Please try later");
+        }
+    }
+
+    const renderInputToolbar = (props) => {
+        if (isConnected) return <InputToolbar {...props} />;
+        else return null;
+    }
 
     return (
         <View style={[styles.container, { backgroundColor: color }]}>
-            <Text>Welcome to the Chat</Text>
+             {}
+            <Text>Welcome in the Messages</Text>
             <GiftedChat
                 messages={messages}
                 renderBubble={renderBubble}
+                renderInputToolbar={renderInputToolbar}
                 onSend={messages => onSend(messages)}
                 user={{
-                    _id: 1
+                    _id: userID,
+                    name: name
                 }}
             />
+
             {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
         </View>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1
+    },
+    messageItem: {
+        height: 70,
+        justifyContent: "center",
+        paddingHorizontal: 30,
+        borderBottomWidth: 1,
+        borderBottomColor: "#AAA",
         flex: 1,
-    }
-})
-
-export default Chat;
+        flexGrow: 1
+    },
+    messageForm: {
+        flexBasis: 275,
+        flex: 0,
+        margin: 15,
+        padding: 15,
+        backgroundColor: "#CCC"
+    },
+    messageName: {
+        height: 50,
+        padding: 15,
+        fontWeight: "600",
+        marginRight: 50,
+        marginBottom: 15,
+        borderColor: "#555",
+        borderWidth: 2
+    },
+    item: {
+        height: 50,
+        padding: 15,
+        marginLeft: 50,
+        marginBottom: 15,
+        borderColor: "#555",
+        borderWidth: 2
+    },
+    addButton: {
+        justifyContent: "center",
+        alignItems: "center",
+        height: 50,
+        backgroundColor: "#000",
+        color: "#FFF"
+    },
+    addButtonText: {
+        color: "#FFF",
+        fontWeight: "600",
+        fontSize: 20
+    },
+});
+export default Chat
