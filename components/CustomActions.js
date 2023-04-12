@@ -59,13 +59,14 @@ const CustomActions = ({ wrapperStyle, iconTextStyle, onSend, storage, userID })
 
     const takePhoto = async () => {
         console.log('takePhoto');
+        try {
         let permissions = await ImagePicker.requestCameraPermissionsAsync();
         if (permissions?.granted) {
             console.log(permissions);
             let result = await ImagePicker.launchCameraAsync();
             if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
             else Alert.alert("Permissions haven't been granted.");
-        }
+        }} catch (e) {Alert.alert("Sorry, Camera not available");}
     }
     
       const getLocation = async () => {
