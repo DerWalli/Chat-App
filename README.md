@@ -67,32 +67,5 @@ firebase.initializeApp({
 - Using the Expo Go app start inTouch by scanning the QR code in your terminal
 - Using the Emulator/Simulator press `a` for Android or `i` for ios
 
-## Dependencies
-
-```json
-{
-  "@react-native-async-storage/async-storage": "1.17.11",
-    "@react-native-community/netinfo": "9.3.7",
-    "@react-navigation/native": "^6.1.6",
-    "@react-navigation/native-stack": "^6.9.12",
-    "expo": "~48.0.6",
-    "expo-constants": "~14.2.1",
-    "expo-image-picker": "~14.1.1",
-    "expo-location": "~15.1.1",
-    "expo-media-library": "~15.2.3",
-    "expo-status-bar": "~1.4.4",
-    "firebase": "^9.18.0",
-    "react": "18.2.0",
-    "react-dom": "^18.2.0",
-    "react-native": "0.71.4",
-    "react-native-communications": "^2.2.1",
-    "react-native-gifted-chat": "^2.0.0",
-    "react-native-maps": "1.3.2",
-    "react-native-safe-area-context": "4.5.0",
-    "react-native-screens": "~3.20.0",
-    "react-native-web": "~0.18.11"
-}
-```
-
 
 
